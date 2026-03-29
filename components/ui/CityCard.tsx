@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { Clock, MapPin, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { City } from '@/types'
@@ -15,6 +16,18 @@ interface CityCardProps {
 export default function CityCard({ city, index = 0, variant = 'default' }: CityCardProps) {
   const isFeatured = variant === 'featured'
 
+  // countryId'den slug'a dönüşüm (statik data'da countryId = slug gibi çalışır)
+  const countrySlugMap: Record<string, string> = {
+    uk: 'birlesik-krallik',
+    nl: 'hollanda',
+    fr: 'fransa',
+    es: 'ispanya',
+    de: 'almanya',
+    tr: 'turkiye',
+    us: 'abd',
+  }
+  const countrySlug = countrySlugMap[city.countryId] ?? city.countryId
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 30 }}
@@ -27,6 +40,7 @@ export default function CityCard({ city, index = 0, variant = 'default' }: CityC
         isFeatured ? 'aspect-[3/4]' : 'aspect-square'
       )}
     >
+      <Link href={`/countries/${countrySlug}/${city.slug}`} className="absolute inset-0 z-10" aria-label={city.name} />
       {/* Image */}
       <div className="absolute inset-0 img-zoom">
         <Image

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { MapPin, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Country } from '@/types'
@@ -24,6 +25,7 @@ export default function CountryCard({ country, index = 0 }: CountryCardProps) {
         'transition-shadow duration-500 hover:shadow-strong'
       )}
     >
+      <Link href={`/countries/${country.slug}`} className="absolute inset-0 z-10" aria-label={country.name} />
       {/* Image */}
       <div className="relative aspect-[4/3] img-zoom">
         <Image
