@@ -63,10 +63,14 @@ export default function WorldMap() {
           style={{ minHeight: '420px' }}
         >
           <MapChartInner
-            visitedCountryCodes={['GBR', 'NLD', 'FRA', 'ESP', 'DEU', 'TUR', 'USA']}
+            visitedCountryCodes={['GBR', 'AZE', 'ROU', 'EGY', 'CZE', 'AUT', 'SVK', 'TUR', 'CHE', 'ITA', 'LIE', 'BHR', 'NLD', 'BEL', 'DEU', 'ESP', 'SWE', 'DNK', 'GRC', 'BGR', 'MKD', 'SRB', 'BIH', 'HRV', 'MNE', 'ALB']}
             onCountryClick={(code) => {
               const countryMap: Record<string, string> = {
-                GBR: 'uk', NLD: 'nl', FRA: 'fr', ESP: 'es', DEU: 'de', TUR: 'tr', USA: 'us',
+                GBR: 'uk', AZE: 'az', ROU: 'ro', EGY: 'eg', CZE: 'cz', AUT: 'at',
+                SVK: 'sk', TUR: 'tr', CHE: 'ch', ITA: 'it', LIE: 'li', BHR: 'bh',
+                NLD: 'nl', BEL: 'be', DEU: 'de', ESP: 'es', SWE: 'se', DNK: 'dk',
+                GRC: 'gr', BGR: 'bg', MKD: 'mk', SRB: 'rs', BIH: 'ba', HRV: 'hr',
+                MNE: 'me', ALB: 'al',
               }
               const found = countries.find((c) => c.id === countryMap[code])
               setSelected(found ?? null)
@@ -87,7 +91,7 @@ export default function WorldMap() {
 
           {/* Country count badge */}
           <div className="absolute top-5 right-5 bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 text-center">
-            <p className="font-serif text-3xl font-semibold text-white">7</p>
+            <p className="font-serif text-3xl font-semibold text-white">26</p>
             <p className="text-xs text-white/60 font-sans mt-0.5">Ülke</p>
           </div>
         </motion.div>

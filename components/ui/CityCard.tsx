@@ -16,15 +16,33 @@ interface CityCardProps {
 export default function CityCard({ city, index = 0, variant = 'default' }: CityCardProps) {
   const isFeatured = variant === 'featured'
 
-  // countryId'den slug'a dönüşüm (statik data'da countryId = slug gibi çalışır)
   const countrySlugMap: Record<string, string> = {
     uk: 'birlesik-krallik',
-    nl: 'hollanda',
-    fr: 'fransa',
-    es: 'ispanya',
-    de: 'almanya',
+    az: 'azerbaycan',
+    ro: 'romanya',
+    eg: 'misir',
+    cz: 'cekya',
+    at: 'avusturya',
+    sk: 'slovakya',
     tr: 'turkiye',
-    us: 'abd',
+    ch: 'isvicre',
+    it: 'italya',
+    li: 'liechtenstein',
+    bh: 'bahreyn',
+    nl: 'hollanda',
+    be: 'belcika',
+    de: 'almanya',
+    es: 'ispanya',
+    se: 'isvec',
+    dk: 'danimarka',
+    gr: 'yunanistan',
+    bg: 'bulgaristan',
+    mk: 'kuzey-makedonya',
+    rs: 'sirbistan',
+    ba: 'bosna-hersek',
+    hr: 'hirvatistan',
+    me: 'karadag',
+    al: 'arnavutluk',
   }
   const countrySlug = countrySlugMap[city.countryId] ?? city.countryId
 
