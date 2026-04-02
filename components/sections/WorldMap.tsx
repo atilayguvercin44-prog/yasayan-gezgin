@@ -9,19 +9,55 @@ import { Country } from '@/types'
 import { MapPin, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Dynamically import the actual map to avoid SSR issues
-const MapChartInner = dynamic(() => import('./WorldMapInner'), {
+const GlobeChart = dynamic(() => import('./Globe3DInner'), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-[2/1] bg-[var(--bg-tertiary)] rounded-3xl animate-pulse flex items-center justify-center">
-      <p className="text-[var(--text-tertiary)] font-sans text-sm">Harita yükleniyor…</p>
+    <div className="w-full" style={{ minHeight: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0F1923', borderRadius: '24px' }}>
+      <p className="text-[var(--text-tertiary)] font-sans text-sm">Küre yükleniyor…</p>
     </div>
   ),
 })
 
+// ISO kodu → ülke ID eşleşmesi
+const CODE_TO_ID: Record<string, string> = {
+  GBR: 'uk', AZE: 'az', ROU: 'ro', EGY: 'eg', CZE: 'cz', AUT: 'at',
+  SVK: 'sk', TUR: 'tr', CHE: 'ch', ITA: 'it', LIE: 'li', BHR: 'bh',
+  NLD: 'nl', BEL: 'be', DEU: 'de', ESP: 'es', SWE: 'se', DNK: 'dk',
+  GRC: 'gr', BGR: 'bg', MKD: 'mk', SRB: 'rs', BIH: 'ba', HRV: 'hr',
+  MNE: 'me', ALB: 'al',
+}
+
+const ID_TO_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(CODE_TO_ID).map(([k, v]) => [v, k])
+)
+
+const ALL_CODES = Object.keys(CODE_TO_ID)
+
 export default function WorldMap() {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
   const [selected, setSelected] = useState<Country | null>(null)
+  const [selectedCode, setSelectedCode] = useState<string | null>(null)
+
+  const handleGlobeClick = (code: string) => {
+    const found = countries.find((c) => c.id === CODE_TO_ID[code])
+    if (selectedCode === code) {
+      setSelected(null)
+      setSelectedCode(null)
+    } else {
+      setSelected(found ?? null)
+      setSelectedCode(code)
+    }
+  }
+
+  const handlePillClick = (c: Country) => {
+    if (selected?.id === c.id) {
+      setSelected(null)
+      setSelectedCode(null)
+    } else {
+      setSelected(c)
+      setSelectedCode(ID_TO_CODE[c.id] ?? null)
+    }
+  }
 
   return (
     <section
@@ -50,31 +86,22 @@ export default function WorldMap() {
             <em className="text-gradient-gold font-medium">Dünya</em>
           </h2>
           <p className="font-sans text-sm text-[var(--text-secondary)] max-w-md mx-auto">
-            Harita üzerindeki noktaları keşfedin. Her nokta bir hikaye.
+            Küreyi döndürün, noktalara tıklayın. Her nokta bir hikaye.
           </p>
         </motion.div>
 
-        {/* Map container */}
+        {/* Globe container */}
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={isInView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.9, delay: 0.2 }}
           className="relative rounded-3xl overflow-hidden bg-[#0F1923] shadow-strong"
-          style={{ minHeight: '420px' }}
+          style={{ minHeight: '500px' }}
         >
-          <MapChartInner
-            visitedCountryCodes={['GBR', 'AZE', 'ROU', 'EGY', 'CZE', 'AUT', 'SVK', 'TUR', 'CHE', 'ITA', 'LIE', 'BHR', 'NLD', 'BEL', 'DEU', 'ESP', 'SWE', 'DNK', 'GRC', 'BGR', 'MKD', 'SRB', 'BIH', 'HRV', 'MNE', 'ALB']}
-            onCountryClick={(code) => {
-              const countryMap: Record<string, string> = {
-                GBR: 'uk', AZE: 'az', ROU: 'ro', EGY: 'eg', CZE: 'cz', AUT: 'at',
-                SVK: 'sk', TUR: 'tr', CHE: 'ch', ITA: 'it', LIE: 'li', BHR: 'bh',
-                NLD: 'nl', BEL: 'be', DEU: 'de', ESP: 'es', SWE: 'se', DNK: 'dk',
-                GRC: 'gr', BGR: 'bg', MKD: 'mk', SRB: 'rs', BIH: 'ba', HRV: 'hr',
-                MNE: 'me', ALB: 'al',
-              }
-              const found = countries.find((c) => c.id === countryMap[code])
-              setSelected(found ?? null)
-            }}
+          <GlobeChart
+            visitedCountryCodes={ALL_CODES}
+            selectedCode={selectedCode}
+            onCountryClick={handleGlobeClick}
           />
 
           {/* Legend */}
@@ -83,10 +110,7 @@ export default function WorldMap() {
               <div className="w-3 h-3 rounded-full bg-gold" />
               <span className="text-xs text-white/60 font-sans">Ziyaret Edildi</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-white/20" />
-              <span className="text-xs text-white/60 font-sans">Henüz Gidilmedi</span>
-            </div>
+            <span className="text-xs text-white/40 font-sans">Kaydırın · Döndürün · Yakınlaştırın</span>
           </div>
 
           {/* Country count badge */}
@@ -140,7 +164,7 @@ export default function WorldMap() {
                 <p className="text-xs text-[var(--text-tertiary)] font-sans">Yıl</p>
               </div>
               <button
-                onClick={() => setSelected(null)}
+                onClick={() => { setSelected(null); setSelectedCode(null) }}
                 className="w-9 h-9 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <X size={14} />
@@ -154,7 +178,7 @@ export default function WorldMap() {
           {countries.map((c) => (
             <button
               key={c.id}
-              onClick={() => setSelected(selected?.id === c.id ? null : c)}
+              onClick={() => handlePillClick(c)}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-sans',
                 'transition-all duration-200 border',
