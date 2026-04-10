@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'fallback-secret')
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -17,6 +15,15 @@ export async function middleware(request: NextRequest) {
 
   // /admin/* ve /api/admin/* koru
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    const jwtSecretStr = process.env.JWT_SECRET
+    if (!jwtSecretStr) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Sunucu yapılandırması eksik' }, { status: 500 })
+      }
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    const JWT_SECRET = new TextEncoder().encode(jwtSecretStr)
     const token = request.cookies.get('yg-auth')?.value
 
     if (!token) {

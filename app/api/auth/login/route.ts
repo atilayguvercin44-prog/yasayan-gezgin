@@ -2,7 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { signToken, getAuthCookieOptions } from '@/lib/auth'
 
+// Basit in-memory rate limiter: 15 dakikada max 10 deneme
+const attempts = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = attempts.get(ip)
+  if (!entry || entry.resetAt < now) {
+    attempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 })
+    return true
+  }
+  if (entry.count >= 10) return false
+  entry.count++
+  return true
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'Çok fazla deneme. 15 dakika sonra tekrar deneyin.' },
+      { status: 429 }
+    )
+  }
   try {
     const { username, password } = await req.json()
 

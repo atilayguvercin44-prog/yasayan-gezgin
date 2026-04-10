@@ -1,9 +1,11 @@
 import { jwtVerify, SignJWT } from 'jose'
 import { cookies } from 'next/headers'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'fallback-secret-change-in-production'
-)
+const jwtSecretStr = process.env.JWT_SECRET
+if (!jwtSecretStr) {
+  throw new Error('JWT_SECRET environment variable is not set')
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecretStr)
 const COOKIE_NAME = 'yg-auth'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7 // 7 gün
 

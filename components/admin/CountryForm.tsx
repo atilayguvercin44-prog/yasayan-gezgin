@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Loader2 } from 'lucide-react'
+import { Save, Loader2, Upload, X } from 'lucide-react'
 import { slugify, cn } from '@/lib/utils'
 import { Country } from '@/types/db'
 
@@ -21,10 +21,31 @@ export default function CountryForm({ initial }: CountryFormProps) {
     cover_image: initial?.cover_image ?? '',
     published:   initial?.published   ?? false,
   })
-  const [slugManual, setSlugManual] = useState(isEdit)
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState('')
-  const [success, setSuccess]       = useState('')
+  const [slugManual, setSlugManual]       = useState(isEdit)
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState('')
+  const [success, setSuccess]             = useState('')
+  const [uploadProgress, setUploadProgress] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadProgress('Yükleniyor...')
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res  = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { setUploadProgress(`Hata: ${data.error}`); return }
+      setForm((f) => ({ ...f, cover_image: data.url }))
+      setUploadProgress('Görsel yüklendi!')
+      setTimeout(() => setUploadProgress(''), 2500)
+    } catch {
+      setUploadProgress('Yükleme başarısız')
+    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -118,19 +139,48 @@ export default function CountryForm({ initial }: CountryFormProps) {
 
       {/* Cover Image */}
       <div>
-        <label className={labelClass}>Kapak Görseli URL</label>
-        <input
-          type="url"
-          value={form.cover_image}
-          onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
-          placeholder="https://images.unsplash.com/..."
-          className={inputClass}
-        />
+        <label className={labelClass}>Kapak Görseli</label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={form.cover_image}
+            onChange={(e) => setForm({ ...form, cover_image: e.target.value })}
+            placeholder="https://images.unsplash.com/... veya dosya yükleyin"
+            className={cn(inputClass, 'flex-1')}
+          />
+          <label className={cn(
+            'flex items-center gap-1.5 px-4 py-3 rounded-xl border border-[#E8E2DA]',
+            'text-sm font-sans text-[#6B6B6B] hover:border-[#C4956A] hover:text-[#C4956A]',
+            'transition-colors cursor-pointer whitespace-nowrap'
+          )}>
+            <Upload size={14} />
+            Yükle
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+          </label>
+          {form.cover_image && (
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, cover_image: '' })}
+              className="p-3 rounded-xl border border-[#E8E2DA] text-[#9A9A9A] hover:border-red-300 hover:text-red-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {uploadProgress && (
+          <p className="text-xs text-[#C4956A] mt-1 font-sans">{uploadProgress}</p>
+        )}
         {form.cover_image && (
           <img
             src={form.cover_image}
             alt="preview"
-            className="mt-2 w-full h-36 object-cover rounded-xl"
+            className="mt-2 w-full h-40 object-cover rounded-xl"
             onError={(e) => (e.currentTarget.style.display = 'none')}
           />
         )}
