@@ -28,7 +28,10 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/countries — yeni ülke
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { name, description, cover_image, published } = body
+  const {
+    name, description, short_description, cover_image, hero_image,
+    flag, continent, visited_year, highlights, lat, lng, published,
+  } = body
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Ülke adı zorunlu' }, { status: 400 })
@@ -38,7 +41,21 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('countries')
-    .insert({ name: name.trim(), slug, description, cover_image, published: published ?? false })
+    .insert({
+      name: name.trim(),
+      slug,
+      description,
+      short_description,
+      cover_image,
+      hero_image,
+      flag,
+      continent,
+      visited_year: visited_year ? Number(visited_year) : null,
+      highlights: highlights ?? [],
+      lat: lat ? Number(lat) : null,
+      lng: lng ? Number(lng) : null,
+      published: published ?? false,
+    })
     .select()
     .single()
 

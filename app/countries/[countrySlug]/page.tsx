@@ -1,5 +1,6 @@
-import { countries } from '@/data/countries'
-import { cities } from '@/data/cities'
+import { countries as staticCountries } from '@/data/countries'
+import { cities as staticCities }       from '@/data/cities'
+import { supabase } from '@/lib/supabase'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
@@ -14,7 +15,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { countrySlug } = await params
-  const country = countries.find((c) => c.slug === countrySlug)
+  const country = staticCountries.find((c) => c.slug === countrySlug)
   if (!country) return { title: 'Bulunamadı' }
   return {
     title: `${country.name} | Yaşayan Gezgin`,
@@ -25,10 +26,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CountryPage({ params }: Props) {
   const { countrySlug } = await params
 
-  const country = countries.find((c) => c.slug === countrySlug)
-  if (!country) notFound()
+  // 1. Supabase'den al (published olanlar)
+  const { data: dbCountry } = await supabase
+    .from('countries')
+    .select('*')
+    .eq('slug', countrySlug)
+    .eq('published', true)
+    .maybeSingle()
 
-  const countryCities = cities.filter((c) => c.countryId === country.id)
+  const { data: dbCities } = dbCountry
+    ? await supabase
+        .from('cities')
+        .select('*')
+        .eq('country_id', dbCountry.id)
+        .eq('published', true)
+        .order('name')
+    : { data: null }
+
+  // 2. Statik veriye fallback
+  const staticCountry = staticCountries.find((c) => c.slug === countrySlug)
+  if (!dbCountry && !staticCountry) notFound()
+
+  const country = {
+    name:            dbCountry?.name            ?? staticCountry!.name,
+    slug:            dbCountry?.slug            ?? staticCountry!.slug,
+    flag:            dbCountry?.flag            ?? staticCountry!.flag,
+    coverImage:      dbCountry?.cover_image     ?? staticCountry!.coverImage,
+    continent:       dbCountry?.continent       ?? staticCountry!.continent,
+    longDescription: dbCountry?.description     ?? staticCountry!.longDescription,
+  }
+
+  // Şehirler: Supabase'deyse Supabase'den, yoksa statikten
+  const countryCities = dbCities?.length
+    ? dbCities.map((c) => ({
+        id:         c.id,
+        slug:       c.slug,
+        name:       c.name,
+        heroImage:  c.hero_image ?? c.cover_image ?? '',
+        excerpt:    c.excerpt    ?? c.description  ?? '',
+      }))
+    : staticCities
+        .filter((c) => c.countryId === staticCountry?.id)
+        .map((c) => ({
+          id:        c.id,
+          slug:      c.slug,
+          name:      c.name,
+          heroImage: c.heroImage,
+          excerpt:   c.excerpt,
+        }))
 
   return (
     <>

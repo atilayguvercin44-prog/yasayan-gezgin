@@ -108,25 +108,25 @@ function GlobeScene({ visitedCountryCodes, selectedCode, onCountryClick }: Globe
       <directionalLight position={[5, 3, 5]} intensity={1.2} />
       <pointLight position={[-4, -2, -4]} intensity={0.4} color="#C4956A" />
 
-      {/* Ana küre */}
+      {/* Ana küre — koyu okyanus mavisi */}
       <mesh>
         <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial color="#0F1923" roughness={0.85} metalness={0.15} />
+        <meshStandardMaterial color="#0D2137" roughness={0.75} metalness={0.25} />
       </mesh>
 
-      {/* Enlem/boylam ızgarası */}
+      {/* Enlem/boylam ızgarası — daha belirgin */}
       <mesh>
-        <sphereGeometry args={[1.003, 24, 24]} />
-        <meshBasicMaterial color="#1E3A50" wireframe transparent opacity={0.18} />
+        <sphereGeometry args={[1.003, 36, 36]} />
+        <meshBasicMaterial color="#1A5080" wireframe transparent opacity={0.35} />
       </mesh>
 
       {/* Atmosfer ışıması */}
       <mesh>
-        <sphereGeometry args={[1.09, 32, 32]} />
+        <sphereGeometry args={[1.12, 32, 32]} />
         <meshBasicMaterial
-          color="#C4956A"
+          color="#4A90C4"
           transparent
-          opacity={0.04}
+          opacity={0.07}
           side={THREE.BackSide}
         />
       </mesh>

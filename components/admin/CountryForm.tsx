@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Loader2, Upload, X } from 'lucide-react'
+import { Save, Loader2, Upload, X, Plus, Trash2 } from 'lucide-react'
 import { slugify, cn } from '@/lib/utils'
 import { Country } from '@/types/db'
 
@@ -15,12 +15,19 @@ export default function CountryForm({ initial }: CountryFormProps) {
   const isEdit  = !!initial
 
   const [form, setForm] = useState({
-    name:        initial?.name        ?? '',
-    slug:        initial?.slug        ?? '',
-    description: initial?.description ?? '',
-    cover_image: initial?.cover_image ?? '',
-    published:   initial?.published   ?? false,
+    name:              initial?.name              ?? '',
+    slug:              initial?.slug              ?? '',
+    flag:              initial?.flag              ?? '',
+    continent:         initial?.continent         ?? '',
+    visited_year:      initial?.visited_year      ?? '',
+    short_description: initial?.short_description ?? '',
+    description:       initial?.description       ?? '',
+    cover_image:       initial?.cover_image       ?? '',
+    published:         initial?.published         ?? false,
   })
+  const [highlights, setHighlights] = useState<string[]>(
+    initial?.highlights ?? []
+  )
   const [slugManual, setSlugManual]       = useState(isEdit)
   const [loading, setLoading]             = useState(false)
   const [error, setError]                 = useState('')
@@ -47,7 +54,6 @@ export default function CountryForm({ initial }: CountryFormProps) {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // Auto-generate slug from name
   useEffect(() => {
     if (!slugManual && form.name) {
       setForm((f) => ({ ...f, slug: slugify(form.name) }))
@@ -70,7 +76,11 @@ export default function CountryForm({ initial }: CountryFormProps) {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          visited_year: form.visited_year ? Number(form.visited_year) : null,
+          highlights,
+        }),
       })
 
       const data = await res.json()
@@ -96,8 +106,16 @@ export default function CountryForm({ initial }: CountryFormProps) {
   )
   const labelClass = 'block text-xs font-medium text-[#6B6B6B] mb-1.5 uppercase tracking-wider'
 
+  const CONTINENTS = ['Avrupa', 'Asya', 'Afrika', 'Amerika', 'Okyanusya', 'Orta Doğu']
+
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-5">
+
+      {/* Temel Bilgiler */}
+      <div className="pb-1 border-b border-[#E8E2DA]">
+        <p className="text-xs font-sans uppercase tracking-widest text-[#C4956A]">Temel Bilgiler</p>
+      </div>
+
       {/* Name */}
       <div>
         <label className={labelClass}>Ülke Adı *</label>
@@ -108,6 +126,43 @@ export default function CountryForm({ initial }: CountryFormProps) {
           placeholder="Örn: Fransa"
           className={inputClass}
         />
+      </div>
+
+      {/* Flag + Continent + Year */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={labelClass}>Bayrak</label>
+          <input
+            type="text"
+            value={form.flag}
+            onChange={(e) => setForm({ ...form, flag: e.target.value })}
+            placeholder="🇫🇷"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass}>Kıta</label>
+          <select
+            value={form.continent}
+            onChange={(e) => setForm({ ...form, continent: e.target.value })}
+            className={inputClass}
+          >
+            <option value="">— Seçin —</option>
+            {CONTINENTS.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Ziyaret Yılı</label>
+          <input
+            type="number"
+            value={form.visited_year}
+            onChange={(e) => setForm({ ...form, visited_year: e.target.value })}
+            placeholder="2023"
+            min="2000"
+            max="2099"
+            className={inputClass}
+          />
+        </div>
       </div>
 
       {/* Slug */}
@@ -125,19 +180,76 @@ export default function CountryForm({ initial }: CountryFormProps) {
         </p>
       </div>
 
-      {/* Description */}
+      {/* İçerik */}
+      <div className="pb-1 border-b border-[#E8E2DA] pt-2">
+        <p className="text-xs font-sans uppercase tracking-widest text-[#C4956A]">İçerik</p>
+      </div>
+
+      {/* Short Description */}
       <div>
-        <label className={labelClass}>Açıklama</label>
+        <label className={labelClass}>Kısa Açıklama <span className="text-[#9A9A9A] normal-case tracking-normal">(kartlarda görünür)</span></label>
+        <input
+          type="text"
+          value={form.short_description}
+          onChange={(e) => setForm({ ...form, short_description: e.target.value })}
+          placeholder="Tek cümleyle ülkeyi anlat"
+          className={inputClass}
+        />
+      </div>
+
+      {/* Long Description */}
+      <div>
+        <label className={labelClass}>Uzun Açıklama <span className="text-[#9A9A9A] normal-case tracking-normal">(ülke sayfasında görünür)</span></label>
         <textarea
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          placeholder="Bu ülke hakkında kısa bir açıklama..."
-          rows={4}
+          placeholder="Bu ülke hakkında detaylı bir gezi rehberi gibi yaz..."
+          rows={5}
           className={cn(inputClass, 'resize-none')}
         />
       </div>
 
-      {/* Cover Image */}
+      {/* Highlights */}
+      <div>
+        <label className={labelClass}>Öne Çıkanlar <span className="text-[#9A9A9A] normal-case tracking-normal">(her satır bir madde)</span></label>
+        <div className="space-y-2">
+          {highlights.map((h, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                type="text"
+                value={h}
+                onChange={(e) => {
+                  const next = [...highlights]
+                  next[i] = e.target.value
+                  setHighlights(next)
+                }}
+                placeholder={`Öne çıkan ${i + 1}`}
+                className={cn(inputClass, 'flex-1')}
+              />
+              <button
+                type="button"
+                onClick={() => setHighlights(highlights.filter((_, j) => j !== i))}
+                className="p-3 rounded-xl border border-[#E8E2DA] text-[#9A9A9A] hover:border-red-300 hover:text-red-400 transition-colors"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setHighlights([...highlights, ''])}
+            className="flex items-center gap-1.5 text-xs text-[#C4956A] hover:text-[#B07A50] font-sans transition-colors"
+          >
+            <Plus size={13} /> Madde Ekle
+          </button>
+        </div>
+      </div>
+
+      {/* Görsel */}
+      <div className="pb-1 border-b border-[#E8E2DA] pt-2">
+        <p className="text-xs font-sans uppercase tracking-widest text-[#C4956A]">Görsel</p>
+      </div>
+
       <div>
         <label className={labelClass}>Kapak Görseli</label>
         <div className="flex gap-2">
@@ -207,7 +319,6 @@ export default function CountryForm({ initial }: CountryFormProps) {
         </button>
       </div>
 
-      {/* Feedback */}
       {error && (
         <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100">
           <p className="text-sm text-red-600 font-sans">{error}</p>
@@ -219,7 +330,6 @@ export default function CountryForm({ initial }: CountryFormProps) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="flex gap-3 pt-2">
         <button
           type="submit"

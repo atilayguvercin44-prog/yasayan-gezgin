@@ -9,7 +9,7 @@ export async function GET(
   const { id } = await params
   const { data, error } = await supabase
     .from('cities')
-    .select('*, countries(id, name, slug)')
+    .select('*, countries(id, name, slug, flag)')
     .eq('id', id)
     .single()
 
@@ -23,7 +23,12 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await req.json()
-  const { name, country_id, description, cover_image, instagram_highlight_name, published } = body
+  const {
+    name, country_id, hero_image, cover_image, excerpt,
+    description, full_description, highlights, gallery,
+    visit_duration, tags, tips, must_see,
+    instagram_highlight_name, lat, lng, published,
+  } = body
 
   if (!name?.trim())       return NextResponse.json({ error: 'Şehir adı zorunlu' }, { status: 400 })
   if (!country_id?.trim()) return NextResponse.json({ error: 'Ülke seçimi zorunlu' }, { status: 400 })
@@ -32,7 +37,26 @@ export async function PATCH(
 
   const { data, error } = await supabase
     .from('cities')
-    .update({ name: name.trim(), slug, country_id, description, cover_image, instagram_highlight_name, published })
+    .update({
+      name: name.trim(),
+      slug,
+      country_id,
+      hero_image,
+      cover_image,
+      excerpt,
+      description,
+      full_description,
+      highlights: highlights ?? [],
+      gallery: gallery ?? [],
+      visit_duration,
+      tags: tags ?? [],
+      tips: tips ?? [],
+      must_see: must_see ?? [],
+      instagram_highlight_name,
+      lat: lat ? Number(lat) : null,
+      lng: lng ? Number(lng) : null,
+      published,
+    })
     .eq('id', id)
     .select()
     .single()

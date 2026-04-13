@@ -25,7 +25,10 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await req.json()
-  const { name, description, cover_image, published } = body
+  const {
+    name, description, short_description, cover_image, hero_image,
+    flag, continent, visited_year, highlights, lat, lng, published,
+  } = body
 
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Ülke adı zorunlu' }, { status: 400 })
@@ -35,7 +38,21 @@ export async function PATCH(
 
   const { data, error } = await supabase
     .from('countries')
-    .update({ name: name.trim(), slug, description, cover_image, published })
+    .update({
+      name: name.trim(),
+      slug,
+      description,
+      short_description,
+      cover_image,
+      hero_image,
+      flag,
+      continent,
+      visited_year: visited_year ? Number(visited_year) : null,
+      highlights: highlights ?? [],
+      lat: lat ? Number(lat) : null,
+      lng: lng ? Number(lng) : null,
+      published,
+    })
     .eq('id', id)
     .select()
     .single()
