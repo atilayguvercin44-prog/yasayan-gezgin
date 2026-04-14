@@ -7,8 +7,7 @@ import {
   Marker,
   ZoomableGroup,
 } from 'react-simple-maps'
-// Topology data bundled locally — no CDN dependency
-import topology from 'world-atlas/countries-110m.json'
+const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
 // ISO 3166-1 numeric → alpha-3
 const NUMERIC_CODES: Record<string, number> = {
@@ -91,7 +90,7 @@ export default function WorldMapInner({
           {/* Ocean background rect */}
           <rect x="-5000" y="-5000" width="10000" height="10000" fill={OCEAN} />
 
-          <Geographies geography={topology}>
+          <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
                 const numId     = Number(geo.id)
