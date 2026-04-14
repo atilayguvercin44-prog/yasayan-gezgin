@@ -7,11 +7,12 @@ import {
   Marker,
   ZoomableGroup,
 } from 'react-simple-maps'
+import { useState } from 'react'
 
 const GEO_URL =
   'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-// ISO 3166-1 numeric codes for visited countries
+// ISO 3166-1 numeric → alpha-3
 const NUMERIC_CODES: Record<string, number> = {
   GBR: 826,
   AZE: 31,
@@ -41,34 +42,34 @@ const NUMERIC_CODES: Record<string, number> = {
   ALB: 8,
 }
 
-// Approximate marker positions [lng, lat]
+// Marker coords [lng, lat]
 const MARKERS: Record<string, [number, number]> = {
-  GBR: [-2.5, 54.5],
-  AZE: [47.5, 40.4],
-  ROU: [25.0, 45.8],
-  EGY: [30.0, 27.0],
-  CZE: [15.5, 49.8],
-  AUT: [14.5, 47.5],
-  SVK: [19.0, 48.7],
-  TUR: [35.2, 39.0],
-  CHE: [8.2, 46.8],
-  ITA: [12.5, 42.5],
-  LIE: [9.5, 47.1],
-  BHR: [50.6, 26.0],
-  NLD: [5.3, 52.3],
-  BEL: [4.5, 50.5],
-  DEU: [10.5, 51.2],
-  ESP: [-3.7, 40.4],
-  SWE: [18.0, 59.5],
-  DNK: [10.0, 56.0],
-  GRC: [22.0, 39.0],
-  BGR: [25.5, 42.7],
-  MKD: [21.7, 41.6],
-  SRB: [21.0, 44.0],
-  BIH: [17.8, 44.2],
-  HRV: [15.5, 45.1],
-  MNE: [19.3, 42.7],
-  ALB: [20.2, 41.2],
+  GBR: [-2.0,  54.0],
+  AZE: [47.5,  40.4],
+  ROU: [25.0,  45.8],
+  EGY: [30.0,  27.0],
+  CZE: [15.5,  49.8],
+  AUT: [14.5,  47.5],
+  SVK: [19.0,  48.7],
+  TUR: [35.2,  39.0],
+  CHE: [ 8.2,  46.8],
+  ITA: [12.5,  42.5],
+  LIE: [ 9.5,  47.1],
+  BHR: [50.6,  26.0],
+  NLD: [ 5.3,  52.3],
+  BEL: [ 4.5,  50.5],
+  DEU: [10.5,  51.2],
+  ESP: [-3.7,  40.4],
+  SWE: [18.0,  59.5],
+  DNK: [10.0,  56.0],
+  GRC: [22.0,  39.0],
+  BGR: [25.5,  42.7],
+  MKD: [21.7,  41.6],
+  SRB: [21.0,  44.0],
+  BIH: [17.8,  44.2],
+  HRV: [15.5,  45.1],
+  MNE: [19.3,  42.7],
+  ALB: [20.2,  41.2],
 }
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -92,7 +93,7 @@ const COUNTRY_NAMES: Record<string, string> = {
   DNK: 'Danimarka',
   GRC: 'Yunanistan',
   BGR: 'Bulgaristan',
-  MKD: 'Kuzey Makedonya',
+  MKD: 'K. Makedonya',
   SRB: 'Sırbistan',
   BIH: 'Bosna-Hersek',
   HRV: 'Hırvatistan',
@@ -100,54 +101,80 @@ const COUNTRY_NAMES: Record<string, string> = {
   ALB: 'Arnavutluk',
 }
 
+// Color tokens
+const OCEAN      = '#0D1B2A'
+const UNVISITED  = '#162535'
+const UNVISITED_HOVER = '#1E3248'
+const VISITED    = '#C4956A'
+const VISITED_HOVER   = '#D4AA87'
+const SELECTED   = '#E8C49A'
+const BORDER     = '#0D1B2A'
+
 interface Props {
   visitedCountryCodes: string[]
+  selectedCode: string | null
   onCountryClick: (code: string) => void
 }
 
-export default function WorldMapInner({ visitedCountryCodes, onCountryClick }: Props) {
+export default function WorldMapInner({ visitedCountryCodes, selectedCode, onCountryClick }: Props) {
+  const [hoveredCode, setHoveredCode] = useState<string | null>(null)
   const visitedNumerics = visitedCountryCodes.map((c) => NUMERIC_CODES[c])
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '420px' }}>
+    <div style={{ width: '100%', height: '100%', minHeight: '440px', background: OCEAN }}>
       <ComposableMap
         projection="geoMercator"
-        projectionConfig={{ scale: 140, center: [10, 35] }}
+        projectionConfig={{ scale: 148, center: [14, 38] }}
         style={{ width: '100%', height: '100%' }}
       >
-        <ZoomableGroup zoom={1} center={[10, 35]} maxZoom={4}>
+        <ZoomableGroup zoom={1} center={[14, 38]} minZoom={0.8} maxZoom={6}>
+
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                const numId = Number(geo.id)
+                const numId  = Number(geo.id)
                 const isVisited = visitedNumerics.includes(numId)
-                const code = visitedCountryCodes.find(
-                  (c) => NUMERIC_CODES[c] === numId
-                )
+                const code   = visitedCountryCodes.find((c) => NUMERIC_CODES[c] === numId)
+                const isSelected = code === selectedCode
+                const isHovered  = code === hoveredCode
+
+                const fillColor = isSelected
+                  ? SELECTED
+                  : isHovered && isVisited
+                    ? VISITED_HOVER
+                    : isVisited
+                      ? VISITED
+                      : isHovered
+                        ? UNVISITED_HOVER
+                        : UNVISITED
 
                 return (
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
                     onClick={() => code && onCountryClick(code)}
+                    onMouseEnter={() => code && setHoveredCode(code)}
+                    onMouseLeave={() => setHoveredCode(null)}
                     style={{
                       default: {
-                        fill: isVisited ? '#C4956A' : '#1E2D3D',
-                        stroke: '#0F1923',
-                        strokeWidth: 0.5,
+                        fill: fillColor,
+                        stroke: BORDER,
+                        strokeWidth: 0.4,
                         outline: 'none',
                         cursor: isVisited ? 'pointer' : 'default',
-                        transition: 'fill 0.2s ease',
+                        transition: 'fill 0.18s ease',
                       },
                       hover: {
-                        fill: isVisited ? '#D4AA87' : '#263545',
-                        stroke: '#0F1923',
-                        strokeWidth: 0.5,
+                        fill: isVisited
+                          ? (isSelected ? SELECTED : VISITED_HOVER)
+                          : UNVISITED_HOVER,
+                        stroke: BORDER,
+                        strokeWidth: 0.4,
                         outline: 'none',
                         cursor: isVisited ? 'pointer' : 'default',
                       },
                       pressed: {
-                        fill: isVisited ? '#A67952' : '#1E2D3D',
+                        fill: isVisited ? SELECTED : UNVISITED,
                         outline: 'none',
                       },
                     }}
@@ -157,9 +184,11 @@ export default function WorldMapInner({ visitedCountryCodes, onCountryClick }: P
             }
           </Geographies>
 
-          {/* Animated markers for visited countries */}
+          {/* Markers */}
           {visitedCountryCodes.map((code) => {
-            const coords = MARKERS[code]
+            const coords    = MARKERS[code]
+            const isSelected = code === selectedCode
+            const isHovered  = code === hoveredCode
             if (!coords) return null
 
             return (
@@ -167,40 +196,62 @@ export default function WorldMapInner({ visitedCountryCodes, onCountryClick }: P
                 key={code}
                 coordinates={coords}
                 onClick={() => onCountryClick(code)}
+                onMouseEnter={() => setHoveredCode(code)}
+                onMouseLeave={() => setHoveredCode(null)}
               >
-                {/* Pulse ring */}
+                {/* Pulse ring (selected or hovered) */}
+                {(isSelected || isHovered) && (
+                  <circle
+                    r={isSelected ? 14 : 10}
+                    fill={isSelected ? '#C4956A' : '#C4956A'}
+                    fillOpacity={isSelected ? 0.25 : 0.18}
+                    stroke="none"
+                    className={isSelected ? 'map-pulse' : ''}
+                  />
+                )}
+
+                {/* Outer ring */}
                 <circle
-                  r={8}
-                  fill="#C4956A"
-                  fillOpacity={0.2}
-                  stroke="none"
-                  className="map-pulse"
+                  r={isSelected ? 8 : 6}
+                  fill={isSelected ? '#E8C49A' : '#C4956A'}
+                  fillOpacity={0.25}
+                  stroke={isSelected ? '#E8C49A' : '#C4956A'}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.6}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
                 />
+
                 {/* Center dot */}
                 <circle
-                  r={4}
-                  fill="#C4956A"
-                  stroke="#FAF7F2"
-                  strokeWidth={1.5}
-                  style={{ cursor: 'pointer' }}
+                  r={isSelected ? 4.5 : 3.5}
+                  fill={isSelected ? '#E8C49A' : '#C4956A'}
+                  stroke={OCEAN}
+                  strokeWidth={1}
+                  style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
                 />
-                {/* Label */}
-                <text
-                  y={-10}
-                  textAnchor="middle"
-                  style={{
-                    fontFamily: 'var(--font-inter), system-ui',
-                    fontSize: '7px',
-                    fill: '#FAF7F2',
-                    opacity: 0.8,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  {COUNTRY_NAMES[code]}
-                </text>
+
+                {/* Label — always visible for selected, hover for others */}
+                {(isSelected || isHovered) && (
+                  <text
+                    y={-12}
+                    textAnchor="middle"
+                    style={{
+                      fontFamily: 'var(--font-inter), system-ui, sans-serif',
+                      fontSize: isSelected ? '8px' : '7px',
+                      fill: isSelected ? '#E8C49A' : '#FAF7F2',
+                      fontWeight: isSelected ? '600' : '400',
+                      opacity: isSelected ? 1 : 0.85,
+                      pointerEvents: 'none',
+                      textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                    }}
+                  >
+                    {COUNTRY_NAMES[code]}
+                  </text>
+                )}
               </Marker>
             )
           })}
+
         </ZoomableGroup>
       </ComposableMap>
     </div>
