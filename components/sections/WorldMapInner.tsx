@@ -7,9 +7,10 @@ import {
   Marker,
   ZoomableGroup,
 } from 'react-simple-maps'
+import { useState } from 'react'
+
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
-// ISO 3166-1 numeric → alpha-3
 const NUMERIC_CODES: Record<string, number> = {
   GBR: 826, AZE:  31, ROU: 642, EGY: 818, CZE: 203,
   AUT:  40, SVK: 703, TUR: 792, CHE: 756, ITA: 380,
@@ -19,7 +20,6 @@ const NUMERIC_CODES: Record<string, number> = {
   ALB:   8,
 }
 
-// Marker centre-of-country coords [lng, lat]
 const MARKERS: Record<string, [number, number]> = {
   GBR: [ -2.0,  54.0], AZE: [47.5,  40.4], ROU: [25.0,  45.8],
   EGY: [ 30.0,  27.0], CZE: [15.5,  49.8], AUT: [14.5,  47.5],
@@ -33,24 +33,23 @@ const MARKERS: Record<string, [number, number]> = {
 }
 
 const LABELS: Record<string, string> = {
-  GBR: 'Birleşik Krallık', AZE: 'Azerbaycan', ROU: 'Romanya',
-  EGY: 'Mısır',            CZE: 'Çekya',       AUT: 'Avusturya',
-  SVK: 'Slovakya',         TUR: 'Türkiye',      CHE: 'İsviçre',
-  ITA: 'İtalya',           LIE: 'Liechtenstein',BHR: 'Bahreyn',
-  NLD: 'Hollanda',         BEL: 'Belçika',      DEU: 'Almanya',
-  ESP: 'İspanya',          SWE: 'İsveç',        DNK: 'Danimarka',
-  GRC: 'Yunanistan',       BGR: 'Bulgaristan',  MKD: 'K. Makedonya',
-  SRB: 'Sırbistan',        BIH: 'Bosna-Hersek', HRV: 'Hırvatistan',
+  GBR: 'Birleşik Krallık', AZE: 'Azerbaycan',   ROU: 'Romanya',
+  EGY: 'Mısır',            CZE: 'Çekya',         AUT: 'Avusturya',
+  SVK: 'Slovakya',         TUR: 'Türkiye',        CHE: 'İsviçre',
+  ITA: 'İtalya',           LIE: 'Liechtenstein',  BHR: 'Bahreyn',
+  NLD: 'Hollanda',         BEL: 'Belçika',        DEU: 'Almanya',
+  ESP: 'İspanya',          SWE: 'İsveç',          DNK: 'Danimarka',
+  GRC: 'Yunanistan',       BGR: 'Bulgaristan',    MKD: 'K. Makedonya',
+  SRB: 'Sırbistan',        BIH: 'Bosna-Hersek',   HRV: 'Hırvatistan',
   MNE: 'Karadağ',          ALB: 'Arnavutluk',
 }
 
-// Design tokens
-const OCEAN         = '#0D1B2A'
+const OCEAN          = '#0D1B2A'
 const LAND_UNVISITED = '#162535'
-const LAND_BORDER   = '#0D1B2A'
-const VISITED_FILL  = '#C4956A'
-const VISITED_HOVER = '#D4AA87'
-const SELECTED_FILL = '#E8C49A'
+const LAND_BORDER    = '#0D1B2A'
+const VISITED_FILL   = '#C4956A'
+const VISITED_HOVER  = '#D4AA87'
+const SELECTED_FILL  = '#E8C49A'
 
 interface Props {
   visitedCountryCodes: string[]
@@ -63,17 +62,19 @@ export default function WorldMapInner({
   selectedCode,
   onCountryClick,
 }: Props) {
+  const [zoom, setZoom] = useState(1)
   const visitedNumerics = visitedCountryCodes.map((c) => NUMERIC_CODES[c])
 
+  // Markers ekranda sabit büyüklükte kalsın — zoom arttıkça ters orantılı küçül
+  const s = 1 / zoom  // scale factor
+
+  // Zoom eşiğine göre label göster/gizle
+  // Düşük zoom'da sadece seçili ülkenin label'ı görünür
+  // Yüksek zoom'da (yaklaştırınca) tüm label'lar görünür
+  const showAllLabels = zoom >= 3
+
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: OCEAN,
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ position: 'absolute', inset: 0, background: OCEAN, overflow: 'hidden' }}>
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{ scale: 148, center: [14, 38] }}
@@ -82,12 +83,12 @@ export default function WorldMapInner({
         height={540}
       >
         <ZoomableGroup
-          zoom={1}
+          zoom={zoom}
           center={[14, 38]}
           minZoom={0.6}
           maxZoom={20}
+          onMoveEnd={({ zoom: z }: { zoom: number; coordinates: [number, number] }) => setZoom(z)}
         >
-          {/* Ocean background rect */}
           <rect x="-5000" y="-5000" width="10000" height="10000" fill={OCEAN} />
 
           <Geographies geography={GEO_URL}>
@@ -95,9 +96,7 @@ export default function WorldMapInner({
               geographies.map((geo) => {
                 const numId     = Number(geo.id)
                 const isVisited = visitedNumerics.includes(numId)
-                const code      = visitedCountryCodes.find(
-                  (c) => NUMERIC_CODES[c] === numId
-                )
+                const code      = visitedCountryCodes.find((c) => NUMERIC_CODES[c] === numId)
                 const isSelected = code === selectedCode
 
                 const fillColor = isSelected
@@ -115,7 +114,7 @@ export default function WorldMapInner({
                       default: {
                         fill: fillColor,
                         stroke: LAND_BORDER,
-                        strokeWidth: 0.4,
+                        strokeWidth: 0.4 * s,
                         outline: 'none',
                         cursor: isVisited ? 'pointer' : 'default',
                       },
@@ -126,7 +125,7 @@ export default function WorldMapInner({
                             ? VISITED_HOVER
                             : '#1E3248',
                         stroke: LAND_BORDER,
-                        strokeWidth: 0.4,
+                        strokeWidth: 0.4 * s,
                         outline: 'none',
                         cursor: isVisited ? 'pointer' : 'default',
                       },
@@ -141,11 +140,19 @@ export default function WorldMapInner({
             }
           </Geographies>
 
-          {/* Country markers */}
+          {/* Markers — tüm boyutlar s (1/zoom) ile çarpılıyor */}
           {visitedCountryCodes.map((code) => {
             const coords     = MARKERS[code]
             const isSelected = code === selectedCode
+            const showLabel  = showAllLabels || isSelected
             if (!coords) return null
+
+            // Temel boyutlar (zoom=1'deki referans değerler)
+            const pulseR  = isSelected ? 12 : 9
+            const outerR  = isSelected ? 7  : 5
+            const innerR  = isSelected ? 4  : 3
+            const labelY  = -(innerR + 6) * s
+            const fontSize = isSelected ? 8.5 : 7
 
             return (
               <Marker
@@ -153,50 +160,52 @@ export default function WorldMapInner({
                 coordinates={coords}
                 onClick={() => onCountryClick(code)}
               >
-                {/* Pulse ring — always shown for visited countries */}
+                {/* Pulse halkası */}
                 <circle
-                  r={isSelected ? 12 : 9}
+                  r={pulseR * s}
                   fill={isSelected ? '#E8C49A' : '#C4956A'}
-                  fillOpacity={isSelected ? 0.3 : 0.18}
+                  fillOpacity={isSelected ? 0.28 : 0.16}
                   stroke="none"
-                  className="map-pulse"
+                  className={isSelected ? 'map-pulse' : ''}
                   style={{ cursor: 'pointer' }}
                 />
 
-                {/* Outer halo */}
+                {/* Dış halka */}
                 <circle
-                  r={isSelected ? 7 : 5}
+                  r={outerR * s}
                   fill="none"
                   stroke={isSelected ? '#E8C49A' : '#C4956A'}
-                  strokeWidth={1.5}
+                  strokeWidth={1.5 * s}
                   strokeOpacity={0.7}
                   style={{ cursor: 'pointer' }}
                 />
 
-                {/* Centre dot */}
+                {/* Merkez nokta */}
                 <circle
-                  r={isSelected ? 4 : 3}
+                  r={innerR * s}
                   fill={isSelected ? '#E8C49A' : '#C4956A'}
                   stroke={OCEAN}
-                  strokeWidth={0.8}
+                  strokeWidth={0.8 * s}
                   style={{ cursor: 'pointer' }}
                 />
 
-                {/* Country label (always visible) */}
-                <text
-                  y={isSelected ? -14 : -12}
-                  textAnchor="middle"
-                  style={{
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: isSelected ? '8.5px' : '7px',
-                    fill: isSelected ? '#E8C49A' : 'rgba(250,247,242,0.75)',
-                    fontWeight: isSelected ? '700' : '400',
-                    pointerEvents: 'none',
-                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))',
-                  }}
-                >
-                  {LABELS[code]}
-                </text>
+                {/* Label — zoom eşiğinde veya seçiliyse göster */}
+                {showLabel && (
+                  <text
+                    y={labelY}
+                    textAnchor="middle"
+                    style={{
+                      fontFamily: 'system-ui, sans-serif',
+                      fontSize: `${fontSize * s}px`,
+                      fill: isSelected ? '#E8C49A' : 'rgba(250,247,242,0.82)',
+                      fontWeight: isSelected ? '700' : '500',
+                      pointerEvents: 'none',
+                      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.95))',
+                    }}
+                  >
+                    {LABELS[code]}
+                  </text>
+                )}
               </Marker>
             )
           })}
